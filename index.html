@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>协纪择日 · 你的私人黄历</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400&display=swap"
+    />
+    <link rel="stylesheet" href="hark.css" />
+    <link rel="stylesheet" href="hark-hero.css" />
+    <style>
+      :root {
+        --x-t3: color-mix(in srgb, var(--fill-system-green) 42%, var(--fill-primary-on));
+        --x-t2: color-mix(in srgb, var(--fill-system-green) 16%, var(--fill-primary-on));
+        --x-t1: var(--fill-tertiary);
+        --x-t0: color-mix(in srgb, var(--fill-system-red) 20%, var(--fill-primary-on));
+      }
+      .x-title { display: grid; gap: 10px; max-width: 680px; padding-block: clamp(16px, 4vw, 40px) 4px; }
+      .x-title__eyebrow { font: var(--type-label); color: var(--text-secondary); }
+      .x-title h1 { font: var(--weight-medium) clamp(28px, 4vw, 42px) / 1.15 var(--sans); }
+      .x-title__sub { font-size: var(--size-lede); color: var(--text-secondary); max-width: 40ch; }
+
+      .x-panel { display: grid; gap: 22px; padding: clamp(16px, 3vw, 28px); border-radius: var(--r-l); background: var(--fill-tertiary); scroll-margin-top: 72px; }
+      .x-field { display: grid; gap: 10px; min-width: 0; }
+      .x-field__label { font: var(--type-label); }
+      .x-field__label small { color: var(--text-secondary); font-weight: var(--weight-regular); margin-left: 6px; }
+      .x-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+      .x-input {
+        min-height: var(--tap); padding: 0 14px; border-radius: var(--r-s);
+        border: 1px solid var(--stroke-primary); background: var(--fill-primary-on);
+        color: var(--text-primary); font: var(--type-body); min-width: 0;
+      }
+      .x-input:focus-visible { outline: 2px solid var(--fill-primary); outline-offset: 2px; }
+      .x-me { font: var(--type-body-strong); }
+      .x-me.is-empty { font: var(--type-small); color: var(--text-secondary); }
+      .x-group { display: grid; gap: 8px; }
+      .x-group__title { font: var(--type-tag); color: var(--text-secondary); }
+      .x-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+      .x-opt {
+        min-height: var(--tap); padding: 0 14px; border-radius: var(--r-pill);
+        border: 1px solid var(--stroke-primary); background: var(--fill-primary-on);
+        color: var(--text-primary); font: var(--type-label); cursor: pointer;
+        transition: background var(--dur-quick) ease;
+      }
+      .x-opt:hover { box-shadow: inset 0 0 0 100px var(--hover-wash); }
+      .x-opt[aria-pressed="true"] { background: var(--fill-primary); color: var(--text-primary-on); border-color: transparent; box-shadow: none; }
+      .x-opt--sm { min-height: 36px; padding: 0 12px; font: var(--type-tag); }
+      @media (pointer: coarse), (max-width: 599px) { .x-opt--sm { min-height: var(--tap); } }
+
+      .x-today { display: grid; gap: 12px; padding: 16px 20px; border-radius: var(--r-m); border: 1px solid var(--stroke-primary); }
+      .x-today__facts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+      .x-today__facts b { font: var(--type-heading); }
+      .x-today__facts span { font: var(--type-small); color: var(--text-secondary); }
+      .x-today__rows { display: grid; gap: 8px; }
+      .x-today__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+      .x-today__row > b { font: var(--type-label); min-width: 3em; }
+
+      .x-tier { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--r-pill); font: var(--type-tag); color: var(--text-primary); white-space: nowrap; }
+      .x-tier[data-t="3"] { background: var(--x-t3); }
+      .x-tier[data-t="2"] { background: var(--x-t2); }
+      .x-tier[data-t="1"] { background: var(--x-t1); box-shadow: inset 0 0 0 1px var(--stroke-primary); }
+      .x-tier[data-t="0"] { background: var(--x-t0); }
+      .x-tier--lg { padding: 6px 16px; font: var(--type-heading); }
+
+      .x-msg { font: var(--type-body); color: var(--text-secondary); max-width: 60ch; }
+      .x-best { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+      .x-bcard {
+        display: grid; align-content: start; gap: 6px; padding: 16px 18px; text-align: left;
+        border-radius: var(--r-m); border: 0; background: var(--fill-tertiary); color: var(--text-primary);
+        font: var(--type-body); cursor: pointer;
+      }
+      .x-bcard:hover { box-shadow: inset 0 0 0 100px var(--hover-wash); }
+      .x-bcard.is-sel { box-shadow: inset 0 0 0 2px var(--fill-primary); }
+      .x-bcard__top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+      .x-bcard__rank { font: var(--type-tag); color: var(--text-secondary); }
+      .x-bcard__date { font: var(--type-heading); }
+      .x-bcard__sub { font: var(--type-small); color: var(--text-secondary); }
+      .x-bcard__why { font: var(--type-small); }
+
+      .x-legend { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: var(--type-tag); color: var(--text-secondary); }
+      .x-months { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 28px 24px; }
+      .x-month h3 { font: var(--type-heading); margin-bottom: 10px; }
+      .x-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+      .x-cal__wd { padding: 4px 0; text-align: center; font: var(--type-tag); color: var(--text-secondary); }
+      .x-cal__wd.is-we { color: var(--text-primary); }
+      .x-day {
+        display: grid; justify-items: center; align-content: center; gap: 1px; min-height: 58px; padding: 4px 0;
+        border: 0; border-radius: 10px; background: var(--x-t1); color: var(--text-primary);
+        font: var(--type-small); cursor: pointer; min-width: 0;
+      }
+      .x-day[data-t="3"] { background: var(--x-t3); }
+      .x-day[data-t="2"] { background: var(--x-t2); }
+      .x-day[data-t="0"] { background: var(--x-t0); }
+      .x-day:hover { box-shadow: inset 0 0 0 100px var(--hover-wash); }
+      .x-day b { font: var(--type-body-strong); }
+      .x-day.is-we b { text-decoration: underline; text-decoration-color: var(--stroke-primary); text-underline-offset: 3px; }
+      .x-day small { font: var(--type-caption); color: var(--text-secondary); white-space: nowrap; overflow: hidden; max-width: 100%; }
+      .x-day.is-today { outline: 2px dashed var(--text-primary); outline-offset: -2px; }
+      .x-day.is-sel { outline: 2px solid var(--fill-primary); outline-offset: 1px; }
+      .x-day.is-out { background: transparent; cursor: default; color: var(--text-secondary); }
+      .x-day.is-out:hover { box-shadow: none; }
+      .x-cal__blank { min-height: 58px; }
+
+      .x-dhead { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+      .x-dhead h3 { font: var(--type-title); }
+      .x-dhead__sub { flex-basis: 100%; font: var(--type-body); color: var(--text-secondary); }
+      .x-tagset { display: grid; gap: 14px; }
+      .x-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+      .x-tags > b { font: var(--type-label); width: 2em; }
+      .x-tags .pill { padding: 3px 10px; }
+      .x-details { border-top: 1px solid var(--stroke-secondary); padding-top: 4px; }
+      .x-details summary { display: flex; align-items: center; min-height: var(--tap); font: var(--type-label); cursor: pointer; }
+      .x-details[open] summary { margin-bottom: 8px; }
+      .x-details .x-tags + .x-tags { margin-top: 10px; }
+      .x-share { display: grid; gap: 12px; justify-items: start; }
+      .x-share img { width: min(100%, 300px); border-radius: var(--r-m); box-shadow: var(--hark-shadow); }
+      .x-share__btn { cursor: pointer; }
+      .cards li button.x-opt { margin-left: 6px; }
+
+      .foot .x-about { flex-basis: 100%; }
+      .x-about summary { display: flex; align-items: center; min-height: var(--tap); font: var(--type-label); color: var(--text-primary); cursor: pointer; }
+      .x-about ul { margin: 4px 0 0; padding-left: 1.2em; display: grid; gap: 8px; max-width: 68ch; }
+    </style>
+  </head>
+  <body>
+    <div class="page" id="top">
+      <header class="nav glass" data-auto></header>
+      <main class="main">
+        <header class="x-title">
+          <p class="x-title__eyebrow">依《钦定协纪辨方书》建除 · 黄黑道 · 神煞</p>
+          <h1>协纪择日 · 你的私人黄历</h1>
+          <p class="x-title__sub">输入生日和想做的事，看看接下来哪几天最适合。</p>
+        </header>
+
+        <section class="x-panel" id="pick" data-nav="选事" aria-label="输入">
+          <div class="x-field">
+            <label class="x-field__label" for="birth">生日<small>公历，1900–2100；不填也能用</small></label>
+            <div class="x-row">
+              <input class="x-input" type="date" id="birth" min="1900-01-01" max="2100-12-31" />
+            </div>
+            <p class="x-me is-empty" id="me" aria-live="polite">填上生日，结果会加上生肖冲合与十神。</p>
+          </div>
+
+          <div class="x-field" role="group" aria-labelledby="act-label">
+            <p class="x-field__label" id="act-label">想做什么<small>选一件事</small></p>
+            <div class="x-group">
+              <p class="x-group__title">现代生活</p>
+              <div class="x-opts" id="acts-modern"></div>
+            </div>
+            <div class="x-group">
+              <p class="x-group__title">传统农事与礼俗</p>
+              <div class="x-opts" id="acts-trad"></div>
+            </div>
+          </div>
+
+          <div class="x-field">
+            <label class="x-field__label" for="from">日期范围</label>
+            <div class="x-row">
+              <input class="x-input" type="date" id="from" min="1901-02-01" max="2100-12-31" />
+              <div class="x-opts" id="spans" role="group" aria-label="跨度"></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="x-today" id="today" aria-live="polite"></div>
+
+        <section class="section" id="best" data-nav="最佳">
+          <div class="head">
+            <p class="head__eyebrow" id="best-eyebrow">最佳日期</p>
+            <h2 id="best-title">最适合的几天</h2>
+            <p class="head__sub">点一张卡看详情。同分时日子早的排前。</p>
+          </div>
+          <p class="x-msg" id="best-msg" hidden></p>
+          <div class="x-best" id="best-list"></div>
+        </section>
+
+        <section class="section" id="cal" data-nav="日历">
+          <div class="head">
+            <p class="head__eyebrow">日历视图</p>
+            <h2 id="cal-title">每天的颜色就是这件事的吉凶。</h2>
+            <p class="head__sub">点任意一天看详情，虚线框是今天。</p>
+          </div>
+          <div class="x-legend" aria-hidden="true">
+            <span class="x-tier" data-t="3">大吉 ≥5</span>
+            <span class="x-tier" data-t="2">吉 2–4</span>
+            <span class="x-tier" data-t="1">平 0–1</span>
+            <span class="x-tier" data-t="0">慎 &lt;0</span>
+          </div>
+          <div class="x-months" id="months"></div>
+        </section>
+
+        <section class="section" id="detail" data-nav="详情">
+          <div class="head">
+            <p class="head__eyebrow" id="detail-eyebrow">日详情</p>
+            <h2 id="detail-title">这一天的全部依据</h2>
+          </div>
+          <div id="detail-body" style="display: grid; gap: 24px"></div>
+        </section>
+      </main>
+
+      <footer class="foot">
+        <details class="x-about">
+          <summary>说明</summary>
+          <ul>
+            <li>宜忌、建除、黄黑道、神煞采用《钦定协纪辨方书》（清乾隆朝钦天监编定）一系的推算体系；现代活动是把约会、面试等对应到书中的传统用事（如面试→赴任，签约→立券），属于本应用的现代化诠释。</li>
+            <li>生日部分看生肖冲合与十神，属民俗参考。</li>
+            <li>“择日是天气预报，不是人生判决书。”民俗文化娱乐，不构成任何建议。</li>
+            <li>全部计算在你的浏览器里完成，不联网，不保存。</li>
+          </ul>
+        </details>
+        <p>历法与宜忌数据：lunar-javascript (6tail, MIT).</p>
+        <nav aria-label="Back to sections" data-auto></nav>
+        <a class="badge" href="https://hark.com/" target="_blank" rel="noopener"><span class="hark-mark"></span><span>built by hark</span></a>
+      </footer>
+    </div>
+    <canvas id="share-canvas" width="1080" height="1920" hidden></canvas>
+    <script src="hark.js"></script>
+    <script src="lunar.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        var MODERN = [
+          ["约会/表白", ["会亲友"], ["纳采", "订盟"]],
+          ["求婚/领证", ["嫁娶"], ["纳采", "订盟"]],
+          ["面试/求职", ["赴任"], ["雇佣", "出行"]],
+          ["入职/上岗", ["赴任"], ["开市"]],
+          ["考试/学新技能", ["入学"], ["习艺"]],
+          ["签合同/谈合作", ["立券"], ["交易", "订盟"]],
+          ["开业/产品上线", ["开市"], ["开光", "挂匾"]],
+          ["搬家/入住新家", ["移徙"], ["入宅", "安床"]],
+          ["出差/旅行", ["出行"], ["乘船"]],
+          ["看病/体检", ["求医"], ["治病"]],
+          ["理发/美容", ["理发"], ["沐浴", "整手足甲"]],
+          ["买车买房/大额消费", ["置产"], ["交易", "纳财"]],
+          ["理财/存钱", ["纳财"], ["开仓"]],
+          ["聚会/请客", ["会亲友"], ["酬神"]],
+          ["装修/动工", ["修造"], ["动土", "安门"]],
+          ["断舍离/分手", ["解除"], ["扫舍"]],
+          ["招人/组团队", ["雇佣"], ["进人口"]],
+          ["维权/打官司", ["词讼"], []]
+        ].map(function (a) { return { name: a[0], p: a[1], s: a[2], modern: true }; });
+        var TRAD = [
+          ["祭祀", ["祭祀"], []],
+          ["祈福", ["祈福"], []],
+          ["嫁娶", ["嫁娶"], []],
+          ["动土", ["动土"], ["破土"]],
+          ["栽种", ["栽种"], []],
+          ["纳畜/牧养", ["纳畜"], ["牧养"]],
+          ["开仓/出货财", ["开仓"], ["出货财"]],
+          ["安葬", ["安葬"], ["破土"]],
+          ["伐木", ["伐木"], []],
+          ["畋猎/取渔", ["畋猎"], ["取渔"]],
+          ["修造", ["修造"], ["竖柱", "上梁"]],
+          ["掘井", ["掘井"], ["开池"]]
+        ].map(function (a) { return { name: a[0], p: a[1], s: a[2], modern: false }; });
+        var ALL = MODERN.concat(TRAD);
+        function actByIndex(i) { return ALL[i]; }
+
+        var GOOD_SHEN = ["天德", "月德", "天德合", "月德合", "天赦", "天恩", "天愿"];
+        var BAD_SHA = ["月破", "岁破", "四离", "四废"];
+        var LIUHE = { 子: "丑", 丑: "子", 寅: "亥", 亥: "寅", 卯: "戌", 戌: "卯", 辰: "酉", 酉: "辰", 巳: "申", 申: "巳", 午: "未", 未: "午" };
+        var SANHE = ["申子辰", "亥卯未", "寅午戌", "巳酉丑"];
+        var WX = { 甲: "木", 乙: "木", 丙: "火", 丁: "火", 戊: "土", 己: "土", 庚: "金", 辛: "金", 壬: "水", 癸: "水" };
+        var GLOSS = {
+          正印: "贵人与学习运", 偏印: "灵感多，适合独处思考", 正官: "规矩与认可", 七杀: "压力大也有冲劲",
+          正财: "稳稳进账", 偏财: "意外之财", 食神: "放松会表达", 伤官: "锋芒外露，说话留余地",
+          比肩: "朋友同行", 劫财: "注意花销"
+        };
+        var NUDGE = {};
+        function nudge(list, map) { list.forEach(function (s) { NUDGE[s] = map; }); }
+        nudge(["正印", "偏印"], { "考试/学新技能": 1, "面试/求职": 1 });
+        nudge(["正官", "七杀"], { "面试/求职": 1, "入职/上岗": 1 });
+        nudge(["正财", "偏财"], { "签合同/谈合作": 1, "买车买房/大额消费": 1, "理财/存钱": 1, "开业/产品上线": 1 });
+        nudge(["食神", "伤官"], { "约会/表白": 1, "求婚/领证": 1, "聚会/请客": 1 });
+        nudge(["比肩", "劫财"], { "聚会/请客": 1, "招人/组团队": 1, "理财/存钱": -1, "买车买房/大额消费": -1 });
+        var TIERS = ["慎", "平", "吉", "大吉"];
+        var WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+        function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+        function pad(n) { return (n < 10 ? "0" : "") + n; }
+        function parseYmd(v) {
+          var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || "");
+          if (!m) return null;
+          var y = +m[1], mo = +m[2], d = +m[3];
+          if (y < 1900 || y > 2100 || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+          return [y, mo, d];
+        }
+        function clean(arr) { return (arr || []).filter(function (x) { return x && x !== "无"; }); }
+
+        /* per-day almanac, cached */
+        var cache = {};
+        function info(solar) {
+          var key = solar.toYmd();
+          if (cache[key]) return cache[key];
+          var l = solar.getLunar();
+          var inf = {
+            key: key, y: solar.getYear(), m: solar.getMonth(), d: solar.getDay(), week: solar.getWeek(),
+            lunarFull: l.toString(), lunarMD: l.getMonthInChinese() + "月" + l.getDayInChinese(),
+            lunarDay: l.getDayInChinese(), lunarMonth: l.getMonthInChinese() + "月",
+            ygz: l.getYearInGanZhiByLiChun(), mgz: l.getMonthInGanZhiExact(), dgz: l.getDayInGanZhi(),
+            gan: l.getDayGan(), zhi: l.getDayZhi(), zx: l.getZhiXing(),
+            ts: l.getDayTianShen(), tsType: l.getDayTianShenType(),
+            xiu: l.getXiu(), xiuLuck: l.getXiuLuck(),
+            yi: clean(l.getDayYi()), ji: clean(l.getDayJi()),
+            js: clean(l.getDayJiShen()), xs: clean(l.getDayXiongSha()),
+            chong: l.getDayChong(), chongSx: l.getDayChongShengXiao(), sha: l.getDaySha(),
+            jq: l.getJieQi() || ""
+          };
+          cache[key] = inf;
+          return inf;
+        }
+
+        function score(inf, act, P) {
+          var f = [];
+          act.p.forEach(function (t) { if (inf.yi.indexOf(t) > -1) f.push({ t: "协纪宜" + t, p: 3 }); });
+          act.s.forEach(function (t) { if (inf.yi.indexOf(t) > -1) f.push({ t: "协纪宜" + t, p: 1 }); });
+          var jiHit = act.p.concat(act.s).filter(function (t) { return inf.ji.indexOf(t) > -1; });
+          if (jiHit.length) f.push({ t: "协纪忌" + jiHit.join("、"), p: -4, force: true });
+          if (inf.yi.indexOf("诸事不宜") > -1 || inf.ji.indexOf("诸事不宜") > -1) f.push({ t: "协纪：诸事不宜", p: -5 });
+          if (inf.tsType === "黄道") f.push({ t: "黄道" + inf.ts, p: 1 });
+          else f.push({ t: "黑道" + inf.ts, p: -1 });
+          var good = GOOD_SHEN.filter(function (n) { return inf.js.indexOf(n) > -1; });
+          if (good.length) f.push({ t: "吉神" + good.join("、"), p: Math.min(2, good.length) });
+          var bad = BAD_SHA.filter(function (n) { return inf.xs.indexOf(n) > -1; });
+          if (bad.length) f.push({ t: "逢" + bad.join("、"), p: -3 });
+          var ss = null, bm = false;
+          if (P) {
+            if (inf.chong === P.zhi) f.push({ t: "冲你的生肖（冲属" + P.sx + "），大事回避", s: "冲你的生肖（属" + P.sx + "）", p: -5, force: true });
+            if (LIUHE[inf.zhi] === P.zhi) f.push({ t: "与你六合", p: 1 });
+            if (inf.zhi !== P.zhi && SANHE.some(function (g) { return g.indexOf(inf.zhi) > -1 && g.indexOf(P.zhi) > -1; })) f.push({ t: "与你三合", p: 1 });
+            if (inf.dgz === P.dgz) { bm = true; f.push({ t: "本命日（与你生日同干支）", s: "本命日", p: 0 }); }
+            ss = LunarUtil.SHI_SHEN[P.gan + inf.gan] || null;
+            var n = ss && NUDGE[ss] ? NUDGE[ss][act.name] : 0;
+            if (n) f.push({ t: "十神" + ss + "：" + GLOSS[ss] + "（参考）", s: "十神" + ss + "（参考）", p: n });
+          }
+          var total = f.reduce(function (a, x) { return a + x.p; }, 0);
+          var tier = total >= 5 ? 3 : total >= 2 ? 2 : total >= 0 ? 1 : 0;
+          var forced = f.filter(function (x) { return x.force; });
+          if (forced.length) tier = 0;
+          var pos = f.filter(function (x) { return !x.force && x.p > 0; }).sort(function (a, b) { return b.p - a.p; });
+          var neg = f.filter(function (x) { return !x.force && x.p < 0; }).sort(function (a, b) { return a.p - b.p; });
+          var reasons = forced.concat(pos, neg).map(function (x) { return x.s || x.t; });
+          return { score: total, tier: tier, f: f, forced: forced, reasons: reasons, ss: ss, bm: bm };
+        }
+
+        /* state, in memory only */
+        var now = new Date();
+        var todayKey = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+        var S = { P: null, act: 2, from: todayKey, span: 60, sel: null };
+
+        function person(v) {
+          var ymd = parseYmd(v);
+          if (!ymd) return null;
+          var b = Solar.fromYmd(ymd[0], ymd[1], ymd[2]).getLunar();
+          return {
+            zhi: b.getYearZhiByLiChun(), sx: b.getYearShengXiaoByLiChun(), ygz: b.getYearInGanZhiByLiChun(),
+            dgz: b.getDayInGanZhi(), gan: b.getDayGan(), lunar: b.getMonthInChinese() + "月" + b.getDayInChinese()
+          };
+        }
+
+        function fmtDate(inf) { return inf.m + "月" + inf.d + "日 " + WEEK[inf.week]; }
+        function fmtFull(inf) { return inf.y + "年" + inf.m + "月" + inf.d + "日 " + WEEK[inf.week]; }
+        function tierHtml(t, lg) { return '<span class="x-tier' + (lg ? " x-tier--lg" : "") + '" data-t="' + t + '">' + TIERS[t] + "</span>"; }
+        function signed(n) { return (n > 0 ? "+" : n < 0 ? "−" : "±") + Math.abs(n); }
+
+        /* inputs */
+        var $ = function (id) { return document.getElementById(id); };
+        function optBtns(el, list, offset) {
+          el.innerHTML = list.map(function (a, i) {
+            return '<button type="button" class="x-opt" data-act="' + (i + offset) + '" aria-pressed="false">' + esc(a.name) + "</button>";
+          }).join("");
+        }
+        optBtns($("acts-modern"), MODERN, 0);
+        optBtns($("acts-trad"), TRAD, MODERN.length);
+        $("spans").innerHTML = [30, 60, 90].map(function (n) {
+          return '<button type="button" class="x-opt" data-span="' + n + '" aria-pressed="false">' + n + "天</button>";
+        }).join("");
+        $("from").value = S.from;
+
+        document.addEventListener("click", function (e) {
+          var b = e.target.closest("[data-act]");
+          if (b) { S.act = +b.getAttribute("data-act"); render(); return; }
+          var sp = e.target.closest("[data-span]");
+          if (sp) { S.span = +sp.getAttribute("data-span"); render(); return; }
+          var day = e.target.closest("[data-day]");
+          if (day) {
+            S.sel = day.getAttribute("data-day");
+            render();
+            $("detail").scrollIntoView({ block: "start" });
+            return;
+          }
+          if (e.target.closest("#share-btn")) drawShare();
+        });
+        $("birth").addEventListener("input", function () { readBirth(); render(); });
+        $("birth").addEventListener("change", function () { readBirth(); render(); });
+        $("from").addEventListener("change", function () {
+          if (parseYmd(this.value)) { S.from = this.value; S.sel = null; render(); }
+        });
+        function readBirth() {
+          var v = $("birth").value;
+          S.P = person(v);
+          var me = $("me");
+          if (S.P) {
+            me.className = "x-me";
+            me.textContent = S.P.ygz + "年 · 属" + S.P.sx + " · 日主" + S.P.gan + WX[S.P.gan] + "（农历" + S.P.lunar + "，日柱" + S.P.dgz + "）";
+          } else {
+            me.className = "x-me is-empty";
+            me.textContent = v ? "请输入 1900–2100 年之间的日期。" : "填上生日，结果会加上生肖冲合与十神。";
+          }
+        }
+
+        /* range */
+        function rangeDays() {
+          var ymd = parseYmd(S.from) || parseYmd(todayKey);
+          var start = Solar.fromYmd(ymd[0], ymd[1], ymd[2]);
+          var act = actByIndex(S.act), out = [];
+          for (var i = 0; i < S.span; i++) {
+            var s = start.next(i);
+            if (s.getYear() > 2100) break;
+            var inf = info(s);
+            out.push({ i: i, inf: inf, r: score(inf, act, S.P) });
+          }
+          return out;
+        }
+
+        function render() {
+          [].forEach.call(document.querySelectorAll("[data-act]"), function (b) {
+            if (b.closest("#pick")) b.setAttribute("aria-pressed", String(+b.getAttribute("data-act") === S.act));
+          });
+          [].forEach.call(document.querySelectorAll("[data-span]"), function (b) {
+            b.setAttribute("aria-pressed", String(+b.getAttribute("data-span") === S.span));
+          });
+          var act = actByIndex(S.act);
+          var days = rangeDays();
+          var ranked = days.slice().sort(function (a, b) { return b.r.score - a.r.score || a.i - b.i; });
+          var hasGood = ranked.length && ranked.some(function (d) { return d.r.tier >= 2; });
+          var top = ranked.slice(0, hasGood ? 5 : 3);
+          var inRange = S.sel && days.some(function (d) { return d.inf.key === S.sel; });
+          if (!inRange) S.sel = top.length ? top[0].inf.key : null;
+          renderToday();
+          renderBest(act, days, top, hasGood);
+          renderCal(act, days);
+          renderDetail(act);
+        }
+
+        function renderToday() {
+          var p = todayKey.split("-").map(Number);
+          var inf = info(Solar.fromYmd(p[0], p[1], p[2]));
+          var list = MODERN.map(function (a, i) { return { i: i, a: a, r: score(inf, a, S.P) }; });
+          var best = list.slice().sort(function (x, y) { return y.r.score - x.r.score || x.i - y.i; }).slice(0, 3);
+          var worst = list.slice().sort(function (x, y) { return x.r.score - y.r.score || x.i - y.i; }).slice(0, 2);
+          function btns(arr) {
+            return arr.map(function (x) {
+              return '<button type="button" class="x-opt x-opt--sm" data-act="' + x.i + '">' + esc(x.a.name) + " · " + TIERS[x.r.tier] + "</button>";
+            }).join("");
+          }
+          $("today").innerHTML =
+            '<div class="x-today__facts"><b>今日速览</b><span>' + fmtDate(inf) + " · 农历" + inf.lunarMD + "</span><span>" +
+            inf.dgz + "日 · " + inf.zx + "日 · " + inf.tsType + inf.ts + (inf.jq ? " · " + inf.jq : "") + "</span></div>" +
+            '<div class="x-today__rows"><div class="x-today__row"><b>今天宜</b>' + btns(best) + "</div>" +
+            '<div class="x-today__row"><b>今天慎</b>' + btns(worst) + "</div></div>" +
+            (S.P ? "" : '<p class="fineprint">没填生日，速览只按通用宜忌算。</p>');
+        }
+
+        function renderBest(act, days, top, hasGood) {
+          $("best-eyebrow").textContent = "最佳日期 · " + act.name;
+          $("best-title").textContent = days.length ? "接下来 " + days.length + " 天里，" + act.name + "最好的" + top.length + "天" : "这个范围没有日期";
+          var msg = $("best-msg");
+          var notes = [];
+          if (days.length && !hasGood) notes.push("这段时间没有一天达到“吉”。下面是相对最好的 3 天，或者试试换个日期范围。");
+          if (!S.P) notes.push("还没填生日，排名只看通用宜忌；填上后会加上冲合与十神。");
+          msg.hidden = !notes.length;
+          msg.textContent = notes.join(" ");
+          $("best-list").innerHTML = top.map(function (d, k) {
+            var inf = d.inf, r = d.r;
+            return '<button type="button" class="x-bcard' + (inf.key === S.sel ? " is-sel" : "") + '" data-day="' + inf.key + '">' +
+              '<span class="x-bcard__top"><span class="x-bcard__rank">第 ' + (k + 1) + " 名 · " + signed(r.score) + " 分</span>" + tierHtml(r.tier) + "</span>" +
+              '<span class="x-bcard__date">' + fmtDate(inf) + "</span>" +
+              '<span class="x-bcard__sub">农历' + inf.lunarMD + " · " + inf.dgz + "日" + (r.bm ? " · 本命日" : "") + "</span>" +
+              '<span class="x-bcard__why">' + esc(r.reasons.slice(0, 2).join(" · ")) + "</span></button>";
+          }).join("");
+        }
+
+        function renderCal(act, days) {
+          $("cal-title").textContent = act.name + "：每天的颜色就是吉凶。";
+          if (!days.length) { $("months").innerHTML = ""; return; }
+          var byKey = {};
+          days.forEach(function (d) { byKey[d.inf.key] = d; });
+          var first = days[0].inf, last = days[days.length - 1].inf;
+          var html = "", y = first.y, m = first.m;
+          while (y < last.y || (y === last.y && m <= last.m)) {
+            var dim = new Date(y, m, 0).getDate();
+            var lead = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+            var cells = ["一", "二", "三", "四", "五", "六", "日"].map(function (w, i) {
+              return '<span class="x-cal__wd' + (i > 4 ? " is-we" : "") + '" aria-hidden="true">' + w + "</span>";
+            }).join("");
+            for (var b = 0; b < lead; b++) cells += '<span class="x-cal__blank"></span>';
+            for (var d = 1; d <= dim; d++) {
+              var key = y + "-" + pad(m) + "-" + pad(d);
+              var wd = (lead + d - 1) % 7, we = wd > 4 ? " is-we" : "";
+              var it = byKey[key];
+              var cls = (key === todayKey ? " is-today" : "") + we;
+              if (!it) {
+                cells += '<span class="x-day is-out' + cls + '"><b>' + d + "</b></span>";
+                continue;
+              }
+              var inf = it.inf;
+              var sub = inf.jq || (inf.lunarDay === "初一" ? inf.lunarMonth : inf.lunarDay);
+              cells += '<button type="button" class="x-day' + cls + (key === S.sel ? " is-sel" : "") + '" data-day="' + key + '" data-t="' + it.r.tier + '" aria-label="' +
+                m + "月" + d + "日 " + WEEK[inf.week] + "，" + TIERS[it.r.tier] + "，" + signed(it.r.score) + "分" + (key === todayKey ? "，今天" : "") + '"' +
+                (key === S.sel ? ' aria-current="date"' : "") + "><b>" + d + "</b><small>" + sub + "</small><small>" + TIERS[it.r.tier] + "</small></button>";
+            }
+            html += '<div class="x-month"><h3>' + y + "年" + m + "月</h3>" + '<div class="x-cal">' + cells + "</div></div>";
+            m++; if (m > 12) { m = 1; y++; }
+          }
+          $("months").innerHTML = html;
+        }
+
+        function tagRow(label, arr, hits) {
+          return '<div class="x-tags"><b>' + label + "</b>" + (arr.length ? arr.map(function (t) {
+            return hits.indexOf(t) > -1 ? '<span class="chip chip--solid">' + esc(t) + "</span>" : '<span class="pill">' + esc(t) + "</span>";
+          }).join("") : '<span class="pill">无</span>') + "</div>";
+        }
+
+        function renderDetail(act) {
+          var body = $("detail-body");
+          if (!S.sel) { body.innerHTML = '<p class="x-msg">选一个日期看详情。</p>'; return; }
+          var p = S.sel.split("-").map(Number);
+          var inf = info(Solar.fromYmd(p[0], p[1], p[2]));
+          var r = score(inf, act, S.P), P = S.P;
+          var terms = act.p.concat(act.s);
+          $("detail-eyebrow").textContent = "日详情 · " + act.name;
+          $("detail-title").textContent = fmtFull(inf) + (inf.key === todayKey ? "（今天）" : "");
+
+          var also = MODERN.map(function (a, i) { return { i: i, a: a, r: score(inf, a, P) }; })
+            .filter(function (x) { return x.a !== act; })
+            .sort(function (x, y) { return y.r.score - x.r.score || x.i - y.i; }).slice(0, 3);
+
+          var rel;
+          if (P) {
+            var items = [];
+            if (inf.chong === P.zhi) items.push("<li><b>冲你的生肖</b>：今天冲属" + P.sx + "，大事回避</li>");
+            if (LIUHE[inf.zhi] === P.zhi) items.push("<li><b>与你六合</b>：日支" + inf.zhi + "合你的年支" + P.zhi + "</li>");
+            if (inf.zhi !== P.zhi && SANHE.some(function (g) { return g.indexOf(inf.zhi) > -1 && g.indexOf(P.zhi) > -1; })) items.push("<li><b>与你三合</b>：日支" + inf.zhi + "与年支" + P.zhi + "同局</li>");
+            if (r.bm) items.push("<li><b>本命日</b>：今天干支" + inf.dgz + "与你的生日相同</li>");
+            if (!items.length) items.push("<li>与你的生肖不冲不合</li>");
+            if (r.ss) items.push("<li><b>十神 " + r.ss + "</b>：" + GLOSS[r.ss] + "（日主" + P.gan + "见" + inf.gan + "，参考）</li>");
+            rel = "<ul>" + items.join("") + "</ul>";
+          } else {
+            rel = '<p class="fineprint">在上面填上生日，这里会显示生肖冲合、本命日和十神。</p>';
+          }
+
+          var rows = r.f.map(function (x) {
+            return '<div class="row"><dt>' + esc(x.t) + "</dt><dd>" + signed(x.p) + "</dd></div>";
+          }).join("");
+
+          body.innerHTML =
+            '<div class="x-dhead">' + tierHtml(r.tier, true) + "<h3>" + signed(r.score) + " 分</h3>" +
+            (r.bm ? '<span class="chip chip--solid">本命日</span>' : "") +
+            '<p class="x-dhead__sub">' + esc(r.forced.length ? "先看这条：" + r.forced.map(function (x) { return x.t; }).join("；") : r.reasons.slice(0, 3).join(" · ")) + "</p></div>" +
+            '<div class="cards">' +
+            "<div><h3>历注</h3><ul>" +
+            "<li>农历" + inf.lunarFull + "</li>" +
+            "<li>" + inf.ygz + "年 " + inf.mgz + "月 " + inf.dgz + "日</li>" +
+            (inf.jq ? "<li>节气：" + inf.jq + "</li>" : "") +
+            "<li>建除值星：" + inf.zx + "</li>" +
+            "<li>值神：" + inf.ts + " · " + inf.tsType + "</li>" +
+            "<li>二十八宿：" + inf.xiu + "宿 · " + inf.xiuLuck + "</li>" +
+            "<li>冲煞：冲" + inf.chongSx + "（" + inf.chong + "） · 煞" + inf.sha + "</li>" +
+            "</ul></div>" +
+            "<div><h3>与你的关系</h3>" + rel + "</div>" +
+            "<div><h3>今天还适合</h3><ul>" + also.map(function (x) {
+              return "<li>" + tierHtml(x.r.tier) + " " + esc(x.a.name) + " <small class=\"sub\">" + signed(x.r.score) + "</small>" +
+                '<button type="button" class="x-opt x-opt--sm" data-act="' + x.i + '">改选这件</button></li>';
+            }).join("") + "</ul></div>" +
+            "</div>" +
+            '<div class="x-tagset"><p class="fineprint">原文宜忌，深色是「' + esc(act.name) + "」对应的用事：" + esc(terms.join("、")) + "</p>" +
+            tagRow("宜", inf.yi, terms) + tagRow("忌", inf.ji, terms) + "</div>" +
+            '<details class="x-details"><summary>吉神 ' + inf.js.length + " · 凶煞 " + inf.xs.length + "</summary>" +
+            tagRow("吉神", inf.js, GOOD_SHEN) + tagRow("凶煞", inf.xs, BAD_SHA) + "</details>" +
+            '<div class="breakdown"><dl>' + rows +
+            '<div class="row row--total"><dt>合计 · ' + TIERS[r.tier] + "</dt><dd>" + signed(r.score) + "</dd></div></dl>" +
+            '<p class="fineprint">大吉 ≥5，吉 2–4，平 0–1，慎 &lt;0。逢忌或冲生肖，最多算“慎”。</p></div>' +
+            '<div class="x-share" id="share"><button type="button" class="btn x-share__btn" id="share-btn">生成分享卡</button><div id="share-out"></div></div>';
+          body._ctx = { inf: inf, r: r, act: act };
+        }
+
+        /* share card: 1080 x 1920, light palette read from the page's tokens */
+        function rgb(str) {
+          var m = /rgba?\(([\d.]+)[ ,]+([\d.]+)[ ,]+([\d.]+)/.exec(str || "");
+          return m ? [+m[1], +m[2], +m[3]] : null;
+        }
+        function mix(a, b, t) {
+          if (!a || !b) return null;
+          return "rgb(" + a.map(function (v, i) { return Math.round(v * t + b[i] * (1 - t)); }).join(",") + ")";
+        }
+        function palette() {
+          var probe = document.createElement("div");
+          probe.style.cssText = "color-scheme:light;position:absolute;visibility:hidden";
+          var names = ["--text-primary", "--text-secondary", "--fill-primary-on", "--fill-tertiary", "--fill-system-green", "--fill-system-red", "--stroke-primary"];
+          probe.innerHTML = names.map(function (n) { return '<span style="color:var(' + n + ')"></span>'; }).join("");
+          document.body.appendChild(probe);
+          var c = [].map.call(probe.children, function (s) { return getComputedStyle(s).color; });
+          probe.remove();
+          var bg = rgb(c[2]);
+          return {
+            ink: c[0], ink2: c[1], bg: c[2], panel: c[3], line: c[6],
+            tier: [mix(rgb(c[5]), bg, 0.2) || c[3], c[3], mix(rgb(c[4]), bg, 0.16) || c[3], mix(rgb(c[4]), bg, 0.42) || c[3]]
+          };
+        }
+        function wrap(ctx, text, x, y, maxW, lh, maxLines) {
+          var line = "", lines = 0;
+          for (var i = 0; i < text.length; i++) {
+            var test = line + text[i];
+            if (ctx.measureText(test).width > maxW && line) {
+              lines++;
+              if (maxLines && lines === maxLines) { ctx.fillText(line.slice(0, -1) + "…", x, y); return y + lh; }
+              ctx.fillText(line, x, y); y += lh; line = text[i];
+            } else line = test;
+          }
+          if (line) { ctx.fillText(line, x, y); y += lh; }
+          return y;
+        }
+        function rrect(ctx, x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+          ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+        }
+        function drawShare() {
+          var c = $("detail-body")._ctx;
+          if (!c) return;
+          var inf = c.inf, r = c.r, act = c.act, pal = palette();
+          var cv = $("share-canvas"), ctx = cv.getContext("2d");
+          var fam = getComputedStyle(document.body).fontFamily + ', "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif';
+          var F = function (w, s) { return w + " " + s + "px " + fam; };
+          var X = 96, W = 1080 - X * 2;
+          ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, 1080, 1920);
+          ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+          ctx.fillStyle = pal.ink; ctx.font = F(600, 72); ctx.fillText("协纪择日", X, 200);
+          ctx.fillStyle = pal.ink2; ctx.font = F(400, 36); ctx.fillText("你的私人黄历", X, 260);
+          ctx.fillStyle = pal.line; ctx.fillRect(X, 310, W, 2);
+          ctx.fillStyle = pal.ink2; ctx.font = F(500, 40); ctx.fillText("想做的事", X, 400);
+          ctx.fillStyle = pal.ink; ctx.font = F(600, 76); ctx.fillText(act.name, X, 490);
+          ctx.font = F(500, 56); ctx.fillText(fmtFull(inf), X, 600);
+          ctx.fillStyle = pal.ink2; ctx.font = F(400, 40);
+          ctx.fillText("农历" + inf.lunarFull + (inf.jq ? " · " + inf.jq : ""), X, 662);
+          ctx.fillText(inf.ygz + "年 " + inf.mgz + "月 " + inf.dgz + "日 · " + inf.zx + " · " + inf.tsType + inf.ts, X, 716);
+          /* tier block */
+          ctx.fillStyle = pal.tier[r.tier]; rrect(ctx, X, 780, W, 440, 48); ctx.fill();
+          ctx.fillStyle = pal.ink; ctx.textAlign = "center";
+          ctx.font = F(600, r.tier === 3 ? 230 : 260); ctx.fillText(TIERS[r.tier], 540, 1070);
+          ctx.font = F(500, 44); ctx.fillText("得分 " + signed(r.score), 540, 1160);
+          ctx.textAlign = "left";
+          /* reasons */
+          var y = 1320;
+          ctx.font = F(500, 42); ctx.fillStyle = pal.ink;
+          r.reasons.slice(0, 3).forEach(function (t) { y = wrap(ctx, "· " + t, X, y, W, 58, 2); });
+          y += 30;
+          ctx.font = F(400, 38); ctx.fillStyle = pal.ink2;
+          y = wrap(ctx, "宜：" + (inf.yi.slice(0, 6).join(" ") || "无"), X, y, W, 54, 2);
+          y = wrap(ctx, "忌：" + (inf.ji.slice(0, 6).join(" ") || "无"), X, y, W, 54, 2);
+          ctx.fillStyle = pal.line; ctx.fillRect(X, 1770, W, 2);
+          ctx.fillStyle = pal.ink2; ctx.font = F(400, 32);
+          ctx.fillText("依《协纪辨方书》体系 · 民俗娱乐参考", X, 1840);
+          var url = cv.toDataURL("image/png");
+          var name = "协纪择日-" + inf.key + ".png";
+          $("share-out").innerHTML =
+            '<div class="links"><a class="btn" id="share-dl" download="' + name + '">下载 PNG</a></div>' +
+            '<p class="fineprint">手机上可以长按图片保存。</p><img id="share-img" alt="' + esc(act.name + " · " + fmtFull(inf) + " · " + TIERS[r.tier]) + '" />';
+          $("share-dl").href = url;
+          $("share-img").src = url;
+        }
+
+        render();
+      })();
+    </script>
+  </body>
+</html>
